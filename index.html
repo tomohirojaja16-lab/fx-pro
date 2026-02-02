@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FX Pro" />
+
+  <!-- NOTE: iOSのホーム画面アイコンは data:SVG が効かない/不安定なことが多い。
+       実運用するなら PNG を用意して apple-touch-icon を差し替え推奨。 -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='75' font-size='75'%3E🎯%3C/text%3E%3C/svg%3E" />
+
+  <title>FX Pro - 完全版</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f1e;
+      color: #fff;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    .header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      padding: 15px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 { font-size: 20px; font-weight: 600; }
+    .mode-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      margin-left: 8px;
+    }
+    .mode-badge.https { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+    .mode-badge.file { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+
+    .price-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .price { font-size: 24px; font-weight: bold; color: #4ade80; }
+    .price.down { color: #f87171; }
+    .change {
+      font-size: 14px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: rgba(74, 222, 128, 0.2);
+      color: #4ade80;
+    }
+    .change.down { background: rgba(248, 113, 113, 0.2); color: #f87171; }
+
+    .update-time {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .api-counter {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 8px;
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+    }
+    .api-counter.warning { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+    .api-counter.danger { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+    .container { padding: 20px; padding-bottom: 100px; }
+
+    .alert-box {
+      background: rgba(251, 191, 36, 0.1);
+      border-left: 3px solid #fbbf24;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .alert-box.success { background: rgba(16, 185, 129, 0.1); border-color: #10b981; }
+    .alert-box.error { background: rgba(239, 68, 68, 0.1); border-color: #ef4444; }
+
+    .alert-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .alert-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #9ca3af;
+    }
+
+    .dashboard {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2a4a6f 100%);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 14px;
+      color: #9ca3af;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .signal-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 12px;
+      border-left: 3px solid #10b981;
+    }
+    .signal-card.passed { border-left-color: #f59e0b; }
+    .signal-card.expired { border-left-color: #6b7280; opacity: 0.75; }
+
+    .signal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .signal-type {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .confidence {
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      white-space: nowrap;
+    }
+    .signal-time {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .signal-details {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      font-size: 13px;
+    }
+    .detail-item { text-align: center; }
+    .detail-label {
+      color: #9ca3af;
+      font-size: 11px;
+      margin-bottom: 3px;
+    }
+    .detail-value { font-weight: 600; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .status-badge.valid { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+    .status-badge.passed { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .status-badge.expired { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
+
+    .price-diff {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 8px;
+      padding: 6px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 6px;
+      line-height: 1.5;
+    }
+
+    .btn {
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+    .btn-secondary { background: rgba(255,255,255,0.1); color: white; }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .notification {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 10px;
+      z-index: 1000;
+      display: none;
+      max-width: 92%;
+    }
+    .notification.warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .notification.error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+
+    .timer {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(139, 92, 246, 0.2);
+      border-radius: 12px;
+      font-size: 12px;
+      color: #a78bfa;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="notification" class="notification"></div>
+
+  <div class="header">
+    <h1>
+      🎯 FX Pro
+      <span id="modeBadge" class="mode-badge file">file://モード</span>
+    </h1>
+
+    <div class="price-info">
+      <div style="flex:1;">
+        <div style="font-size: 12px; color: #9ca3af;">
+          USD/JPY <span id="dataMode">(シミュレーション)</span>
+        </div>
+        <div id="currentPrice" class="price">149.850</div>
+      </div>
+      <div id="priceChange" class="change">▲ 0.02%</div>
+    </div>
+
+    <div class="update-time">
+      <span id="updateTime">更新: 未実行</span>
+      <span id="apiCounter" class="api-counter">API: 0/1500</span>
+    </div>
+  </div>
+
+  <div class="container">
+    <div id="envAlert" class="alert-box" style="display:none;"></div>
+
+    <div class="dashboard">
+      <div class="section-title">
+        <span>🎯</span>
+        <span>現在のシグナル</span>
+        <span id="nextUpdate" class="timer" style="margin-left:auto;">⏰ 次の4H足確定まで --:--</span>
+      </div>
+      <div id="currentSignal"></div>
+    </div>
+
+    <div class="dashboard">
+      <div class="section-title">
+        <span>📊</span>
+        <span>過去24時間のシグナル</span>
+      </div>
+      <div id="signalHistory"></div>
+    </div>
+
+    <div class="btn-grid">
+      <button class="btn btn-primary" onclick="updateSignal()">🔄 更新</button>
+      <button class="btn btn-secondary" onclick="showHelp()">📖 使い方</button>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+
+    // =========================
+    // 状態
+    // =========================
+    let currentPrice = 149.850;
+    let previousPrice = 149.830;
+    let signalHistory = [];
+
+    let isHttps = false;
+    let apiAvailable = false;
+
+    // =========================
+    // 設定
+    // =========================
+    const PAIR_SPECS = {
+      tickSize: 0.001,
+      decimals: 3,
+      pointValue: 100
+    };
+
+    const CONFIG = {
+      baseRR: 1.5,
+      minRR: 1.5,
+      passTolerancePips: 0.5
+    };
+
+    const API_LIMIT = {
+      total: 1500,
+      warning: 1200,
+      emergency: 1450
+    };
+
+    const API_URL = 'https://api.exchangerate-api.com/v4/latest/USD';
+
+    // =========================
+    // ユーティリティ
+    // =========================
+    function $(id) { return document.getElementById(id); }
+
+    // ★ 検知時刻表示用（追加）
+    function formatDetectedTime(ts) {
+      const d = new Date(ts);
+      const Y = d.getFullYear();
+      const M = String(d.getMonth() + 1).padStart(2, '0');
+      const D = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      const ss = String(d.getSeconds()).padStart(2, '0');
+      return `${Y}/${M}/${D} ${hh}:${mm}:${ss}`;
+    }
+
+    function showMsg(msg, type = 'success') {
+      const el = $('notification');
+      if (!el) return;
+      el.className = 'notification';
+      if (type === 'warning') el.classList.add('warning');
+      if (type === 'error') el.classList.add('error');
+      el.textContent = msg;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 2000);
+    }
+
+    function setUpdateTime(prefix) {
+      const el = $('updateTime');
+      if (!el) return;
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      el.textContent = `更新: ${prefix} ${hh}:${mm}:${ss}`;
+    }
+
+    function roundToTick(price) {
+      const rounded = Math.round(price / PAIR_SPECS.tickSize) * PAIR_SPECS.tickSize;
+      return Number(rounded.toFixed(PAIR_SPECS.decimals));
+    }
+
+    function priceToPips(distance) {
+      return Math.abs(distance) * PAIR_SPECS.pointValue;
+    }
+
+    // =========================
+    // API使用量管理
+    // =========================
+    function getApiUsage() {
+      const month = new Date().getMonth();
+      const savedMonth = parseInt(localStorage.getItem('api_month'), 10);
+      const monthToUse = Number.isFinite(savedMonth) ? savedMonth : month;
+
+      if (month !== monthToUse) {
+        localStorage.setItem('api_count', '0');
+        localStorage.setItem('api_month', String(month));
+        return 0;
+      }
+      return parseInt(localStorage.getItem('api_count'), 10) || 0;
+    }
+
+    function updateApiCounter() {
+      const counter = $('apiCounter');
+      if (!counter) return;
+      const used = getApiUsage();
+      counter.textContent = `API: ${used}/${API_LIMIT.total}`;
+
+      if (used >= API_LIMIT.emergency) {
+        counter.className = 'api-counter danger';
+      } else if (used >= API_LIMIT.warning) {
+        counter.className = 'api-counter warning';
+      } else {
+        counter.className = 'api-counter';
+      }
+    }
+
+    function incrementApiUsage() {
+      const current = getApiUsage();
+      const newCount = current + 1;
+      localStorage.setItem('api_count', String(newCount));
+      updateApiCounter();
+
+      if (newCount >= API_LIMIT.emergency) {
+        showMsg('🚫 API上限到達', 'error');
+      } else if (newCount >= API_LIMIT.warning) {
+        showMsg('⚠️ API使用量80%超過', 'warning');
+      }
+      return newCount;
+    }
+
+    // =========================
+    // 環境判定
+    // =========================
+    function detectEnvironment() {
+      isHttps = window.location.protocol === 'https:';
+
+      const modeBadge = $('modeBadge');
+      const envAlert = $('envAlert');
+      const dataMode = $('dataMode');
+
+      if (!modeBadge || !envAlert || !dataMode) return;
+
+      if (isHttps) {
+        modeBadge.className = 'mode-badge https';
+        modeBadge.textContent = 'httpsモード';
+        dataMode.textContent = '(リアルタイム試行)';
+
+        envAlert.className = 'alert-box success';
+        envAlert.innerHTML =
+          "<div class='alert-title'>✅ HTTPS環境</div>" +
+          "<div class='alert-text'>APIアクセスを試行します。失敗時は自動でシミュレーションに切り替えます。</div>";
+        envAlert.style.display = 'block';
+
+        tryFetchAPI(true);
+      } else {
+        modeBadge.className = 'mode-badge file';
+        modeBadge.textContent = 'file://モード';
+        dataMode.textContent = '(シミュレーション)';
+
+        envAlert.className = 'alert-box';
+        envAlert.innerHTML =
+          "<div class='alert-title'>⚠️ file://モードで動作中</div>" +
+          "<div class='alert-text'>外部API接続はできません。シミュレーションで動作します。</div>";
+        envAlert.style.display = 'block';
+
+        apiAvailable = false;
+      }
+
+      updateApiCounter();
+    }
+
+    // =========================
+    // API取得
+    // =========================
+    async function tryFetchAPI(isInit = false) {
+      const used = getApiUsage();
+      if (used >= API_LIMIT.emergency) {
+        apiAvailable = false;
+        if (!isInit) showMsg('🚫 API上限のため取得停止', 'error');
+        return false;
+      }
+
+      const envAlert = $('envAlert');
+      const dataMode = $('dataMode');
+
+      try {
+        const before = currentPrice;
+        const response = await fetch(API_URL, { method: 'GET', cache: 'no-cache' });
+
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+
+        const data = await response.json();
+        if (!data || !data.rates || !data.rates.JPY) throw new Error('No JPY rate');
+
+        apiAvailable = true;
+        previousPrice = before;
+        currentPrice = Number(data.rates.JPY);
+
+        incrementApiUsage();
+
+        if (dataMode) dataMode.textContent = '(リアルタイム)';
+
+        if (envAlert) {
+          envAlert.className = 'alert-box success';
+          envAlert.innerHTML =
+            "<div class='alert-title'>✅ APIアクセス成功</div>" +
+            "<div class='alert-text'>リアルタイムデータで動作しています。</div>";
+          envAlert.style.display = 'block';
+        }
+
+        if (!isInit) showMsg('✅ リアルタイム更新');
+        return true;
+      } catch (e) {
+        apiAvailable = false;
+
+        if (dataMode) dataMode.textContent = '(シミュレーション)';
+        if (envAlert) {
+          envAlert.className = 'alert-box error';
+          envAlert.innerHTML =
+            "<div class='alert-title'>⚠️ APIアクセス失敗</div>" +
+            "<div class='alert-text'>ネットワーク/CORS/仕様変更等で取得できませんでした。シミュレーションで継続します。</div>";
+          envAlert.style.display = 'block';
+        }
+
+        if (!isInit) showMsg('⚠️ API取得失敗 → シミュレーション', 'warning');
+        return false;
+      }
+    }
+
+    // =========================
+    // 価格表示更新
+    // =========================
+    function renderPrice() {
+      const priceEl = $('currentPrice');
+      const changeEl = $('priceChange');
+      if (!priceEl || !changeEl) return;
+
+      priceEl.textContent = Number(currentPrice).toFixed(3);
+
+      const priceDiff = currentPrice - previousPrice;
+      const pct = ((priceDiff / previousPrice) * 100);
+      const pctStr = Math.abs(pct).toFixed(2);
+
+      if (priceDiff >= 0) {
+        priceEl.className = 'price';
+        changeEl.className = 'change';
+        changeEl.textContent = '▲ ' + pctStr + '%';
+      } else {
+        priceEl.className = 'price down';
+        changeEl.className = 'change down';
+        changeEl.textContent = '▼ ' + pctStr + '%';
+      }
+    }
+
+    function simulateTick(silent = true) {
+      if (apiAvailable) return;
+      previousPrice = currentPrice;
+      const change = (Math.random() - 0.5) * 0.1;
+      currentPrice = roundToTick(currentPrice + change);
+      renderPrice();
+      if (!silent) setUpdateTime('価格');
+    }
+
+    // =========================
+    // シグナル
+    // =========================
+    function isSignalValid(signal) {
+      const age = Date.now() - signal.timestamp;
+      const maxAge = 8 * 60 * 60 * 1000;
+
+      if (age > maxAge) {
+        return { valid: false, reason: 'expired', message: '⏱️ 期限切れ (8時間経過)' };
+      }
+
+      const tolerance = CONFIG.passTolerancePips / PAIR_SPECS.pointValue;
+      const diff = currentPrice - signal.entry;
+      const diffPips = priceToPips(diff);
+
+      if (signal.type === 'buy') {
+        if (currentPrice > signal.entry + tolerance) {
+          return {
+            valid: false,
+            reason: 'passed',
+            message: `🚫 価格通過 (現在価格 ${diffPips.toFixed(1)}pips上)`,
+            diff: diffPips
+          };
+        }
+      } else {
+        if (currentPrice < signal.entry - tolerance) {
+          return {
+            valid: false,
+            reason: 'passed',
+            message: `🚫 価格通過 (現在価格 ${Math.abs(diffPips).toFixed(1)}pips下)`,
+            diff: diffPips
+          };
+        }
+      }
+
+      return { valid: true, reason: 'valid', message: '✅ 有効 - エントリー可能' };
+    }
+
+    function generateSignal() {
+      const basePrice = currentPrice;
+
+      const scenarios = [
+        { type: 'buy',  entry: basePrice - 0.05, sl: basePrice - 0.35, confidence: 78 },
+        { type: 'sell', entry: basePrice + 0.05, sl: basePrice + 0.35, confidence: 72 },
+        { type: 'buy',  entry: basePrice - 0.03, sl: basePrice - 0.18, confidence: 65 }
+      ];
+
+      const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+
+      const entry = roundToTick(scenario.entry);
+      const sl = roundToTick(scenario.sl);
+      const R = Math.abs(entry - sl);
+      const rPips = priceToPips(R);
+
+      const tp = roundToTick(
+        scenario.type === 'buy'
+          ? entry + CONFIG.baseRR * R
+          : entry - CONFIG.baseRR * R
+      );
+
+      const tpPips = priceToPips(Math.abs(tp - entry));
+      const rr = tpPips / rPips;
+
+      return {
+        type: scenario.type,
+        basePrice: basePrice,
+        entry,
+        sl,
+        tp,
+        rPips,
+        tpPips,
+        rr,
+        confidence: scenario.confidence,
+        timestamp: Date.now() // ★ これが検知時刻
+      };
+    }
+
+    function displayCurrentSignal(signal) {
+      const container = $('currentSignal');
+      if (!container) return;
+
+      const validity = isSignalValid(signal);
+      const cardClass = validity.valid ? 'signal-card' : `signal-card ${validity.reason}`;
+
+      container.innerHTML =
+        `<div class="${cardClass}">
+          <div class="signal-header">
+            <div class="signal-type">
+              ${signal.type === 'buy' ? '📈 買い' : '📉 売り'}シグナル
+            </div>
+            <div class="confidence">${signal.confidence}%</div>
+          </div>
+
+          <div class="signal-time">
+            検知: ${formatDetectedTime(signal.timestamp)}<br>
+            生成時価格: ${Number(signal.basePrice).toFixed(3)}
+          </div>
+
+          <div class="signal-details">
+            <div class="detail-item">
+              <div class="detail-label">エントリー</div>
+              <div class="detail-value">${signal.entry.toFixed(3)}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">SL</div>
+              <div class="detail-value" style="color:#f87171;">${signal.sl.toFixed(3)}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">TP</div>
+              <div class="detail-value" style="color:#4ade80;">${signal.tp.toFixed(3)}</div>
+            </div>
+          </div>
+
+          <div style="margin-top:10px;font-size:12px;color:#9ca3af;">
+            R: ${signal.rPips.toFixed(0)}pips | RR: 1:${signal.rr.toFixed(2)}
+          </div>
+
+          <span class="status-badge ${validity.reason}">${validity.message}</span>
+
+          ${validity.diff !== undefined ? `
+            <div class="price-diff">
+              現在価格: ${currentPrice.toFixed(3)}<br>
+              Entry${validity.diff > 0 ? '+' : ''}${validity.diff.toFixed(1)}pips
+            </div>
+          ` : ''}
+        </div>`;
+    }
+
+    function displaySignalHistory() {
+      const container = $('signalHistory');
+      if (!container) return;
+
+      if (signalHistory.length === 0) {
+        container.innerHTML = "<div style='text-align:center;padding:20px;color:#6b7280;'>履歴なし</div>";
+        return;
+      }
+
+      const html = signalHistory.map((signal) => {
+        const age = Date.now() - signal.timestamp;
+        const mins = Math.floor(age / (1000 * 60));
+        const hours = Math.floor(mins / 60);
+        const timeStr = hours > 0 ? `${hours}時間${mins % 60}分前` : `${mins}分前`;
+
+        const validity = isSignalValid(signal);
+        const cardClass = validity.valid ? 'signal-card' : `signal-card ${validity.reason}`;
+
+        return `
+          <div class="${cardClass}">
+            <div class="signal-header">
+              <div class="signal-type">
+                ${signal.type === 'buy' ? '📈 買い' : '📉 売り'}
+              </div>
+              <div class="confidence">${signal.confidence}%</div>
+            </div>
+
+            <div class="signal-time">
+              検知: ${formatDetectedTime(signal.timestamp)}（${timeStr}）<br>
+              生成時: ${Number(signal.basePrice).toFixed(3)}
+            </div>
+
+            <div class="signal-details">
+              <div class="detail-item">
+                <div class="detail-label">Entry</div>
+                <div class="detail-value">${signal.entry.toFixed(3)}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">SL</div>
+                <div class="detail-value">${signal.sl.toFixed(3)}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">TP</div>
+                <div class="detail-value">${signal.tp.toFixed(3)}</div>
+              </div>
+            </div>
+
+            <span class="status-badge ${validity.reason}">${validity.message}</span>
+
+            ${validity.diff !== undefined ? `
+              <div class="price-diff">
+                現在価格: ${currentPrice.toFixed(3)}<br>
+                Entry${validity.diff > 0 ? '+' : ''}${validity.diff.toFixed(1)}pips
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = html;
+    }
+
+    // =========================
+    // 更新ボタン（メイン）
+    // =========================
+    async function updateSignal() {
+      if (isHttps) {
+        const ok = await tryFetchAPI(false);
+        if (!ok) simulateTick(true);
+      } else {
+        simulateTick(true);
+      }
+
+      renderPrice();
+      setUpdateTime('シグナル');
+
+      const signal = generateSignal();
+      signalHistory.unshift(signal);
+      signalHistory = signalHistory.slice(0, 10);
+
+      displayCurrentSignal(signal);
+      displaySignalHistory();
+      showMsg('✅ 更新完了');
+    }
+
+    // =========================
+    // タイマー
+    // =========================
+    function updateTimer() {
+      const el = $('nextUpdate');
+      if (!el) return;
+
+      const now = new Date();
+      const nextTime = new Date(now);
+
+      const h = now.getHours();
+      const m = now.getMinutes();
+      const s = now.getSeconds();
+
+      const nextHour = (h % 4 === 0 && (m > 0 || s > 0))
+        ? h + 4
+        : (Math.floor(h / 4) * 4 + 4);
+
+      nextTime.setHours(nextHour, 0, 0, 0);
+
+      const diff = nextTime - now;
+      const hh = Math.max(0, Math.floor(diff / (1000 * 60 * 60)));
+      const mm = Math.max(0, Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)));
+
+      el.innerHTML = `⏰ 次の4H足確定まで ${hh}:${String(mm).padStart(2, '0')}`;
+    }
+
+    function showHelp() {
+      const mode = apiAvailable ? 'リアルタイム' : 'シミュレーション';
+      const used = getApiUsage();
+      alert(
+        "🎯 FX Pro - 完全版\n\n" +
+        `現在のモード: ${mode}\n` +
+        `API使用量: ${used}/${API_LIMIT.total}\n\n` +
+        "【推奨運用】\n" +
+        "1日4回チェック（0時/8時/16時/20時）\n\n" +
+        "【ロジック】\n" +
+        "・4H足ベース\n" +
+        "・R計算・RR判定\n" +
+        "・有効性判定（期限8時間 / 価格通過）\n\n" +
+        "【有効性判定】\n" +
+        "✅ 有効 - エントリー可能\n" +
+        "🚫 価格通過 - Entry価格超え\n" +
+        "⏱️ 期限切れ - 8時間経過"
+      );
+    }
+
+    // =========================
+    // 初期化
+    // =========================
+    function init() {
+      detectEnvironment();
+      renderPrice();
+      updateTimer();
+      updateApiCounter();
+
+      // 初回は自動で1回更新
+      updateSignal();
+
+      // 4Hタイマー更新
+      setInterval(updateTimer, 30 * 1000);
+
+      // シミュレーション時だけ価格をゆらす
+      setInterval(() => {
+        if (!apiAvailable) {
+          simulateTick(true);
+          displaySignalHistory();
+          if (signalHistory[0]) displayCurrentSignal(signalHistory[0]);
+        }
+      }, 5000);
+
+      // 履歴の期限切れ表示を更新
+      setInterval(() => displaySignalHistory(), 60 * 1000);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>
