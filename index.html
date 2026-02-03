@@ -1,0 +1,17 @@
+function setNextH4CloseFromData(h4){
+  if (!h4 || h4.length === 0) { nextH4CloseMs = null; return; }
+
+  // いちばん新しい足の開始時刻
+  const lastStart = h4[h4.length - 1].ts;
+  if (!Number.isFinite(lastStart)) { nextH4CloseMs = null; return; }
+
+  // それが未確定か確定かを判定して「次の確定」を出す
+  const ms = intervalMs('4h');
+  const now = Date.now();
+  const safetyMs = 90 * 1000;
+
+  // lastStart+4h が未来なら、その時刻が次の確定
+  // もし過去なら、すでに確定済みなので次はさらに+4h
+  const candidate = lastStart + ms;
+  nextH4CloseMs = (candidate > now + safetyMs) ? candidate : (candidate + ms);
+}
