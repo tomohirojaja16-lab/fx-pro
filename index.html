@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FX Pro" />
+  <title>FX Pro - Trend Only (USDJPY)</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f1e;
+      color: #fff;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    .header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      padding: 15px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 { font-size: 20px; font-weight: 600; }
+
+    .badges { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(255,255,255,0.08);
+      color: #d1d5db;
+    }
+    .badge.ok { background: rgba(16, 185, 129, 0.18); color: #34d399; }
+    .badge.warn { background: rgba(245, 158, 11, 0.18); color: #fbbf24; }
+    .badge.ng { background: rgba(239, 68, 68, 0.18); color: #f87171; }
+
+    .price-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      gap: 10px;
+    }
+    .price { font-size: 26px; font-weight: 800; color: #4ade80; }
+    .price.down { color: #f87171; }
+    .change {
+      font-size: 14px;
+      padding: 5px 10px;
+      border-radius: 8px;
+      background: rgba(74, 222, 128, 0.2);
+      color: #4ade80;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .change.down { background: rgba(248, 113, 113, 0.2); color: #f87171; }
+
+    .update-time {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #94a3b8;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .smalltag {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(59, 130, 246, 0.18);
+      color: #93c5fd;
+      font-weight: 700;
+    }
+
+    .container { padding: 20px; padding-bottom: 100px; }
+
+    .alert-box {
+      background: rgba(245, 158, 11, 0.12);
+      border-left: 3px solid #f59e0b;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    .alert-box.ok { background: rgba(16, 185, 129, 0.10); border-color: #10b981; }
+    .alert-box.ng { background: rgba(239, 68, 68, 0.10); border-color: #ef4444; }
+
+    .alert-title { font-size: 13px; font-weight: 800; margin-bottom: 6px; }
+    .alert-text { font-size: 12px; line-height: 1.6; color: #cbd5e1; }
+
+    .dashboard {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2a4a6f 100%);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: 13px;
+      color: #cbd5e1;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .timer {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(139, 92, 246, 0.18);
+      color: #c4b5fd;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 14px;
+      border-left: 3px solid rgba(255,255,255,0.18);
+    }
+    .card.ok { border-left-color: #10b981; }
+    .card.warn { border-left-color: #f59e0b; }
+    .card.ng { border-left-color: #ef4444; }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    .kv > div { background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px; }
+    .k { color: #cbd5e1; font-size: 11px; margin-bottom: 4px; }
+    .v { font-weight: 800; }
+
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .btn {
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      width: 100%;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+    .btn-secondary { background: rgba(255,255,255,0.10); color: white; }
+
+    .notification {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 14px 18px;
+      border-radius: 12px;
+      z-index: 1000;
+      display: none;
+      max-width: 92%;
+      font-weight: 800;
+    }
+    .notification.warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .notification.error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+  </style>
+
+</head>
+
+<body>
+  <div id="notification" class="notification"></div>
+
+  <div class="header">
+    <h1>🎯 FX Pro（USDJPY固定）</h1>
+
+```
+<div class="badges">
+  <span id="envBadge" class="badge warn">HTTPS必須</span>
+  <span id="apiBadge" class="badge warn">OHLC未取得</span>
+  <span id="permBadge" class="badge">許可: --</span>
+</div>
+
+<div class="price-info">
+  <div style="flex:1;">
+    <div style="font-size: 12px; color: #cbd5e1;">USD/JPY（終値ベース）</div>
+    <div id="currentPrice" class="price">--</div>
+  </div>
+  <div id="priceChange" class="change">--</div>
+</div>
+
+<div class="update-time">
+  <span id="updateTime">更新: 未実行</span>
+  <span id="credits" class="smalltag">credits: 0</span>
+</div>
+```
+
+  </div>
+
+  <div class="container">
+    <div id="envAlert" class="alert-box" style="display:none;"></div>
+
+```
+<div class="dashboard">
+  <div class="section-title">
+    <span>🧭</span><span>日足 許可判定（EMA + ADX）</span>
+  </div>
+  <div id="dailyCard" class="card">
+    <div style="font-weight:800;">未更新</div>
+    <div style="margin-top:6px;color:#cbd5e1;font-size:12px;line-height:1.6;">
+      まず「更新」を押してください（HTTPS環境で）。
+    </div>
+  </div>
+</div>
+
+<div class="dashboard">
+  <div class="section-title">
+    <span>📈</span><span>4H 押し目判定（1Hなし）</span>
+    <span id="nextUpdate" class="timer">⏰ 次の4H確定まで --:--</span>
+  </div>
+  <div id="h4Card" class="card">
+    <div style="font-weight:800;">未更新</div>
+    <div style="margin-top:6px;color:#cbd5e1;font-size:12px;line-height:1.6;">
+      日足が「許可ON」の時だけ、4Hの押し目判定が動きます。
+    </div>
+  </div>
+</div>
+
+<div class="btn-grid">
+  <button class="btn btn-primary" onclick="runUpdate()">🔄 更新</button>
+  <button class="btn btn-secondary" onclick="showHelp()">📖 使い方</button>
+</div>
+```
+
+  </div>
+
+<script>
+'use strict';
+
+/* =========================
+   APIキー設定（Twelve Data）
+   ========================= */
+const API = {
+  base: 'https://api.twelvedata.com/time_series',
+  symbol: 'USD/JPY',
+  apikey: 'c480ad5f014e4298bd441ebe90452a2a'
+};
+
+// 超安全①の固定パラメータ
+const RULE = {
+  d1: { emaFast: 50, emaSlow: 200, adxPeriod: 14, adxMin: 30 },
+  h4: { emaShort: 20, emaMid: 50, lookbackSwing: 6 }
+};
+
+// 取得本数（余裕を見て多め）
+const OUTPUT = {
+  d1: 260,
+  h4: 200
+};
+
+// 端末内カウント
+let creditsUsed = 0;
+
+// 最終データ（キャッシュ）
+let last = {
+  d1: null,
+  h4: null,
+  permission: { mode: 'OFF', reason: [] },
+  price: null
+};
+
+function $(id){ return document.getElementById(id); }
+
+function showMsg(msg, type='success'){
+  const el = $('notification');
+  el.className = 'notification';
+  if(type==='warning') el.classList.add('warning');
+  if(type==='error') el.classList.add('error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(()=> el.style.display='none', 2000);
+}
+
+function setCredits(){
+  $('credits').textContent = `credits: ${creditsUsed}`;
+}
+
+function formatTime(ts){
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  const ss = String(d.getSeconds()).padStart(2,'0');
+  return `${hh}:${mm}:${ss}`;
+}
+
+function setUpdateTime(){
+  $('updateTime').textContent = `更新: ${formatTime(Date.now())}`;
+}
+
+/* =========================
+   Time / Close detection
+   - TwelveData datetimeを扱う
+   - "最後に確定した足"を時刻で判定する
+   ========================= */
+
+// JSTに寄せる（TwelveDataはtimezone指定可能）
+const DATA_TZ = 'Asia/Tokyo';
+
+function intervalMs(interval){
+  if (interval === '4h') return 4 * 60 * 60 * 1000;
+  if (interval === '1day') return 24 * 60 * 60 * 1000;
+  throw new Error('unsupported interval: ' + interval);
+}
+
+// TwelveDataの datetime を epoch(ms) に変換（timezone=Asia/Tokyoを指定する前提）
+function parseTwelveDatetimeToMs(dt){
+  if (!dt) throw new Error('datetime missing');
+
+  // 1day: "YYYY-MM-DD"
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dt)) {
+    const [Y, M, D] = dt.split('-').map(Number);
+    return new Date(Y, M - 1, D, 0, 0, 0).getTime(); // 端末TZ依存（通常JST想定）
+  }
+
+  // 4h: "YYYY-MM-DD HH:MM:SS"
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dt)) {
+    const [d, t] = dt.split(' ');
+    const [Y, M, D] = d.split('-').map(Number);
+    const [hh, mm, ss] = t.split(':').map(Number);
+    return new Date(Y, M - 1, D, hh, mm, ss).getTime(); // 端末TZ依存（通常JST想定）
+  }
+
+  // ISO 8601等も来た場合の保険
+  const parsed = Date.parse(dt);
+  if (Number.isFinite(parsed)) return parsed;
+
+  // Unix timestampっぽい場合の保険（秒 or ms）
+  if (typeof dt === 'number') return dt > 1e12 ? dt : dt * 1000;
+
+  throw new Error('unknown datetime format: ' + dt);
+}
+
+/**
+ * 確定足indexを「時刻」で決める（length-2依存をやめる）
+ * - safetyMs: 反映遅延を吸収する安全マージン
+ */
+function lastClosedIndex(arr, interval, safetyMs = 90 * 1000){
+  if (!arr || arr.length === 0) return -1;
+
+  const ms = intervalMs(interval);
+  const now = Date.now();
+
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const start = Number.isFinite(arr[i].ts) ? arr[i].ts : parseTwelveDatetimeToMs(arr[i].t);
+    const closeTime = start + ms;
+    if (closeTime <= now - safetyMs) return i;
+  }
+
+  // どれも確定扱いできない場合は安全側に倒す
+  return Math.max(0, arr.length - 2);
+}
+
+// 4Hの「次の確定時刻」をデータ起点で計算
+let nextH4CloseMs = null;
+function setNextH4CloseFromData(h4){
+  if (!h4 || h4.length === 0) { nextH4CloseMs = null; return; }
+
+  const lastStart = h4[h4.length - 1].ts;
+  if (!Number.isFinite(lastStart)) { nextH4CloseMs = null; return; }
+
+  const ms = intervalMs('4h');
+  const now = Date.now();
+  const safetyMs = 90 * 1000;
+
+  // 最新足の確定時刻
+  let nextClose = lastStart + ms;
+
+  // 現在時刻を超えるまで +4h
+  while (nextClose <= now + safetyMs) {
+    nextClose += ms;
+  }
+
+  nextH4CloseMs = nextClose;
+}
+
+/* =========================
+   OHLC Fetch（Twelve Data）
+   ========================= */
+async function fetchOHLC(interval, outputsize){
+  const url =
+    `${API.base}` +
+    `?symbol=${encodeURIComponent(API.symbol)}` +
+    `&interval=${encodeURIComponent(interval)}` +
+    `&outputsize=${encodeURIComponent(String(outputsize))}` +
+    `&timezone=${encodeURIComponent(DATA_TZ)}` +
+    `&apikey=${encodeURIComponent(API.apikey)}`;
+
+  const res = await fetch(url, { method:'GET', cache:'no-cache' });
+  creditsUsed += 1;
+  setCredits();
+
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+
+  if(json.status && json.status !== 'ok'){
+    throw new Error(json.message || 'API error');
+  }
+  if(!json.values || !Array.isArray(json.values)) throw new Error('valuesなし');
+
+  // time desc → asc
+  const asc = json.values.slice().reverse().map(v => {
+    const t = v.datetime || v.date || v.time || v.timestamp;
+    return ({
+      t,
+      ts: parseTwelveDatetimeToMs(t),
+      o: Number(v.open),
+      h: Number(v.high),
+      l: Number(v.low),
+      c: Number(v.close)
+    });
+  });
+
+  if(asc.some(x => !Number.isFinite(x.c))) throw new Error('OHLC数値が不正');
+  return asc;
+}
+
+/* =========================
+   指標：EMA
+   ========================= */
+function ema(series, period){
+  const k = 2 / (period + 1);
+  const out = new Array(series.length).fill(null);
+  if(series.length < period) return out;
+
+  let sum = 0;
+  for(let i=0;i<period;i++) sum += series[i];
+  let prev = sum / period;
+  out[period-1] = prev;
+
+  for(let i=period;i<series.length;i++){
+    const v = series[i];
+    prev = (v - prev) * k + prev;
+    out[i] = prev;
+  }
+  return out;
+}
+
+/* =========================
+   指標：ADX (Wilder)
+   ========================= */
+function adx(ohlc, period=14){
+  const n = ohlc.length;
+  const tr = new Array(n).fill(null);
+  const plusDM = new Array(n).fill(null);
+  const minusDM = new Array(n).fill(null);
+
+  for(let i=1;i<n;i++){
+    const cur = ohlc[i], prev = ohlc[i-1];
+    const upMove = cur.h - prev.h;
+    const downMove = prev.l - cur.l;
+
+    const tr1 = cur.h - cur.l;
+    const tr2 = Math.abs(cur.h - prev.c);
+    const tr3 = Math.abs(cur.l - prev.c);
+    tr[i] = Math.max(tr1, tr2, tr3);
+
+    plusDM[i]  = (upMove > downMove && upMove > 0) ? upMove : 0;
+    minusDM[i] = (downMove > upMove && downMove > 0) ? downMove : 0;
+  }
+
+  function rma(arr, p){
+    const out = new Array(arr.length).fill(null);
+    let sum = 0;
+    let count = 0;
+
+    for(let i=0;i<arr.length;i++){
+      const v = arr[i];
+      if(v === null) continue;
+      sum += v; count += 1;
+      if(count === p){
+        let prev = sum / p;
+        out[i] = prev;
+        for(let j=i+1;j<arr.length;j++){
+          const x = arr[j];
+          if(x === null) continue;
+          prev = (prev * (p-1) + x) / p;
+          out[j] = prev;
+        }
+        break;
+      }
+    }
+    return out;
+  }
+
+  const trRMA = rma(tr, period);
+  const pDMRMA = rma(plusDM, period);
+  const mDMRMA = rma(minusDM, period);
+
+  const pDI = new Array(n).fill(null);
+  const mDI = new Array(n).fill(null);
+  const dx = new Array(n).fill(null);
+
+  for(let i=0;i<n;i++){
+    if(trRMA[i] === null || trRMA[i] === 0) continue;
+    pDI[i] = 100 * (pDMRMA[i] / trRMA[i]);
+    mDI[i] = 100 * (mDMRMA[i] / trRMA[i]);
+    const denom = pDI[i] + mDI[i];
+    if(denom === 0) continue;
+    dx[i] = 100 * (Math.abs(pDI[i] - mDI[i]) / denom);
+  }
+
+  const adxArr = rma(dx, period);
+  return { adx: adxArr, pDI, mDI };
+}
+
+/* =========================
+   日足：許可判定（超安全①）
+   ========================= */
+function calcDailyPermission(d1){
+  const closes = d1.map(x => x.c);
+  const e50 = ema(closes, RULE.d1.emaFast);
+  const e200 = ema(closes, RULE.d1.emaSlow);
+  const adxObj = adx(d1, RULE.d1.adxPeriod);
+
+  const i = lastClosedIndex(d1, '1day');
+  const iPrev = i - 1;
+
+  const close = closes[i];
+  const ema50 = e50[i];
+  const ema200 = e200[i];
+  const ema200Prev = e200[iPrev];
+  const adxNow = adxObj.adx[i];
+  const adxPrev = adxObj.adx[iPrev];
+
+  const reason = [];
+
+  if(ema50 === null || ema200 === null || adxNow === null || adxPrev === null){
+    return { mode:'OFF', reason:['データ不足（EMA/ADX計算中）'], snap:{close, ema50, ema200, adxNow} };
+  }
+
+  const buy = {
+    cAbove200: close > ema200,
+    e50Above200: ema50 > ema200,
+    e200Up: ema200 > ema200Prev,
+    adxMin: adxNow >= RULE.d1.adxMin,
+    adxUp: adxNow > adxPrev
+  };
+
+  const sell = {
+    cBelow200: close < ema200,
+    e50Below200: ema50 < ema200,
+    e200Down: ema200 < ema200Prev,
+    adxMin: adxNow >= RULE.d1.adxMin,
+    adxUp: adxNow > adxPrev
+  };
+
+  const buyOK = Object.values(buy).every(Boolean);
+  const sellOK = Object.values(sell).every(Boolean);
+
+  if(buyOK && !sellOK){
+    reason.push('D1: BUY許可ON（超安全①）');
+    return { mode:'BUY', reason, snap:{close, ema50, ema200, ema200Prev, adxNow, adxPrev, buy, sell} };
+  }
+  if(sellOK && !buyOK){
+    reason.push('D1: SELL許可ON（超安全①）');
+    return { mode:'SELL', reason, snap:{close, ema50, ema200, ema200Prev, adxNow, adxPrev, buy, sell} };
+  }
+
+  reason.push('D1: OFF（条件未達）');
+  return { mode:'OFF', reason, snap:{close, ema50, ema200, ema200Prev, adxNow, adxPrev, buy, sell} };
+}
+
+/* =========================
+   4H：押し目判定（1Hなし）
+   ========================= */
+function calcH4State(h4, permMode){
+  if(permMode === 'OFF'){
+    return { state:'OFF', msg:'日足がOFFのため、4H判定は停止', snap:null };
+  }
+
+  const closes = h4.map(x => x.c);
+  const highs  = h4.map(x => x.h);
+  const lows   = h4.map(x => x.l);
+
+  const e20 = ema(closes, RULE.h4.emaShort);
+  const e50 = ema(closes, RULE.h4.emaMid);
+
+  const i = lastClosedIndex(h4, '4h');
+  const prev = i - 1;
+
+  const c = closes[i];
+  const h = highs[i];
+  const l = lows[i];
+  const cPrev = closes[prev];
+  const hPrev = highs[prev];
+  const lPrev = lows[prev];
+
+  const ema20 = e20[i];
+  const ema50 = e50[i];
+
+  if(ema20 === null || ema50 === null){
+    return { state:'WAIT', msg:'データ不足（EMA計算中）', snap:{c, ema20, ema50} };
+  }
+
+  const zoneLow = Math.min(ema20, ema50);
+  const zoneHigh = Math.max(ema20, ema50);
+
+  const touchedZone = (l <= zoneHigh && h >= zoneLow);
+
+  if(permMode === 'BUY'){
+    const confirm = (c > ema20) && (h > hPrev) && (c > cPrev);
+
+    if(!touchedZone){
+      return { state:'WAIT_PULLBACK', msg:'押し目待ち（EMA20-50ゾーン未接触）', snap:{c, ema20, ema50, zoneLow, zoneHigh} };
+    }
+    if(touchedZone && !confirm){
+      return { state:'WAIT_CONFIRM', msg:'押し目ゾーン接触 → 4H再開確認待ち（終値>EMA20 & 高値更新）', snap:{c, ema20, ema50, zoneLow, zoneHigh, h, hPrev} };
+    }
+    return { state:'ENTRY_OK', msg:'エントリー可（超安全：4H確定で再開確認済）', snap:{c, ema20, ema50, zoneLow, zoneHigh, h, hPrev} };
+  }
+
+  if(permMode === 'SELL'){
+    const confirm = (c < ema20) && (l < lPrev) && (c < cPrev);
+
+    if(!touchedZone){
+      return { state:'WAIT_PULLBACK', msg:'戻り待ち（EMA20-50ゾーン未接触）', snap:{c, ema20, ema50, zoneLow, zoneHigh} };
+    }
+    if(touchedZone && !confirm){
+      return { state:'WAIT_CONFIRM', msg:'戻りゾーン接触 → 4H再開確認待ち（終値<EMA20 & 安値更新）', snap:{c, ema20, ema50, zoneLow, zoneHigh, l, lPrev} };
+    }
+    return { state:'ENTRY_OK', msg:'エントリー可（超安全：4H確定で再開確認済）', snap:{c, ema20, ema50, zoneLow, zoneHigh, l, lPrev} };
+  }
+}
+
+/* =========================
+   UI描画
+   ========================= */
+function setEnvUI(){
+  const https = location.protocol === 'https:';
+  const envBadge = $('envBadge');
+  const envAlert = $('envAlert');
+
+  if(https){
+    envBadge.className = 'badge ok';
+    envBadge.textContent = 'HTTPS';
+    envAlert.style.display = 'block';
+    envAlert.className = 'alert-box ok';
+    envAlert.innerHTML =
+      "<div class='alert-title'>✅ HTTPS環境</div>" +
+      "<div class='alert-text'>OHLC APIを取得してEMA+ADX判定します（USDJPY固定）。</div>";
+  }else{
+    envBadge.className = 'badge ng';
+    envBadge.textContent = 'file://不可';
+    envAlert.style.display = 'block';
+    envAlert.className = 'alert-box ng';
+    envAlert.innerHTML =
+      "<div class='alert-title'>🚫 file:// では動きません</div>" +
+      "<div class='alert-text'>外部API取得のため、HTTPSでホストしてください。</div>";
+  }
+}
+
+function renderPrice(nowClose, prevClose){
+  const priceEl = $('currentPrice');
+  const changeEl = $('priceChange');
+
+  priceEl.textContent = nowClose.toFixed(3);
+
+  const diff = nowClose - prevClose;
+  const pct = (diff / prevClose) * 100;
+  const pctStr = Math.abs(pct).toFixed(2);
+
+  if(diff >= 0){
+    priceEl.className = 'price';
+    changeEl.className = 'change';
+    changeEl.textContent = `▲ ${pctStr}%`;
+  }else{
+    priceEl.className = 'price down';
+    changeEl.className = 'change down';
+    changeEl.textContent = `▼ ${pctStr}%`;
+  }
+}
+
+function renderDaily(permission){
+  const card = $('dailyCard');
+  const permBadge = $('permBadge');
+
+  const s = permission.snap || {};
+  const adxNow = Number.isFinite(s.adxNow) ? s.adxNow.toFixed(1) : '--';
+  const adxPrev = Number.isFinite(s.adxPrev) ? s.adxPrev.toFixed(1) : '--';
+  const ema50 = Number.isFinite(s.ema50) ? s.ema50.toFixed(3) : '--';
+  const ema200 = Number.isFinite(s.ema200) ? s.ema200.toFixed(3) : '--';
+  const close = Number.isFinite(s.close) ? s.close.toFixed(3) : '--';
+
+  let cls = 'card';
+  let badgeCls = 'badge';
+  let label = '許可: OFF';
+
+  if(permission.mode === 'BUY'){
+    cls += ' ok';
+    badgeCls += ' ok';
+    label = '許可: BUY ON';
+  }else if(permission.mode === 'SELL'){
+    cls += ' ok';
+    badgeCls += ' ok';
+    label = '許可: SELL ON';
+  }else{
+    cls += ' warn';
+    badgeCls += ' warn';
+    label = '許可: OFF';
+  }
+
+  permBadge.className = badgeCls;
+  permBadge.textContent = label;
+
+  const buy = s.buy || {};
+  const sell = s.sell || {};
+
+  const checkLine = (name, ok) => `${ok ? '✅' : '❌'} ${name}`;
+
+  const checks = (permission.mode === 'SELL')
+    ? [
+        checkLine('Close < EMA200', !!sell.cBelow200),
+        checkLine('EMA50 < EMA200', !!sell.e50Below200),
+        checkLine('EMA200 下降（傾き）', !!sell.e200Down),
+        checkLine(`ADX>=${RULE.d1.adxMin}`, !!sell.adxMin),
+        checkLine('ADX 上向き', !!sell.adxUp)
+      ]
+    : [
+        checkLine('Close > EMA200', !!buy.cAbove200),
+        checkLine('EMA50 > EMA200', !!buy.e50Above200),
+        checkLine('EMA200 上昇（傾き）', !!buy.e200Up),
+        checkLine(`ADX>=${RULE.d1.adxMin}`, !!buy.adxMin),
+        checkLine('ADX 上向き', !!buy.adxUp)
+      ];
+
+  card.className = cls;
+  card.innerHTML = `
+    <div style="font-weight:900;font-size:14px;">
+      ${label}
+    </div>
+    <div style="margin-top:6px;color:#cbd5e1;font-size:12px;line-height:1.7;">
+      ${checks.join('<br>')}
+    </div>
+    <div class="kv">
+      <div><div class="k">Close（確定足）</div><div class="v">${close}</div></div>
+      <div><div class="k">ADX(14)（確定足）</div><div class="v">${adxNow} <span style="color:#94a3b8;font-weight:700;">(prev ${adxPrev})</span></div></div>
+      <div><div class="k">EMA50</div><div class="v">${ema50}</div></div>
+      <div><div class="k">EMA200</div><div class="v">${ema200}</div></div>
+    </div>
+  `;
+}
+
+function renderH4(h4State, permMode){
+  const card = $('h4Card');
+
+  let cls = 'card';
+  if(h4State.state === 'ENTRY_OK') cls += ' ok';
+  else if(h4State.state === 'WAIT_CONFIRM') cls += ' warn';
+  else if(h4State.state === 'WAIT_PULLBACK') cls += ' warn';
+  else cls += ' ng';
+
+  const s = h4State.snap || {};
+  const c = Number.isFinite(s.c) ? s.c.toFixed(3) : '--';
+  const ema20 = Number.isFinite(s.ema20) ? s.ema20.toFixed(3) : '--';
+  const ema50 = Number.isFinite(s.ema50) ? s.ema50.toFixed(3) : '--';
+  const zL = Number.isFinite(s.zoneLow) ? s.zoneLow.toFixed(3) : '--';
+  const zH = Number.isFinite(s.zoneHigh) ? s.zoneHigh.toFixed(3) : '--';
+
+  const dir = permMode === 'BUY' ? '買い' : (permMode === 'SELL' ? '売り' : '--');
+
+  card.className = cls;
+  card.innerHTML = `
+    <div style="font-weight:900;font-size:14px;">
+      方向: ${dir} / 状態: ${h4State.state}
+    </div>
+    <div style="margin-top:6px;color:#cbd5e1;font-size:12px;line-height:1.7;">
+      ${h4State.msg}
+    </div>
+    <div class="kv">
+      <div><div class="k">Close（確定足）</div><div class="v">${c}</div></div>
+      <div><div class="k">押し目ゾーン（EMA20-50）</div><div class="v">${zL} 〜 ${zH}</div></div>
+      <div><div class="k">EMA20</div><div class="v">${ema20}</div></div>
+      <div><div class="k">EMA50</div><div class="v">${ema50}</div></div>
+    </div>
+  `;
+}
+
+/* =========================
+   4H確定タイマー（データ時刻基準）
+   ========================= */
+function updateTimer(){
+  const el = $('nextUpdate');
+  if(!el) return;
+
+  if (!nextH4CloseMs) {
+    el.textContent = '⏰ 次の4H確定まで --:--';
+    return;
+  }
+
+  const now = Date.now();
+  const diff = Math.max(0, nextH4CloseMs - now);
+
+  const hh = Math.floor(diff / (1000*60*60));
+  const mm = Math.floor((diff % (1000*60*60)) / (1000*60));
+
+  el.textContent = `⏰ 次の4H確定まで ${hh}:${String(mm).padStart(2,'0')}`;
+}
+
+/* =========================
+   メイン更新（D1 + H4）
+   ========================= */
+async function runUpdate(){
+  try{
+    setEnvUI();
+    if(location.protocol !== 'https:'){
+      showMsg('file://では取得できません（HTTPSで）', 'error');
+      return;
+    }
+
+    $('apiBadge').className = 'badge warn';
+    $('apiBadge').textContent = '取得中...';
+
+    // 1) 日足取得 → 許可判定
+    const d1 = await fetchOHLC('1day', OUTPUT.d1);
+    last.d1 = d1;
+
+    const perm = calcDailyPermission(d1);
+    last.permission = perm;
+
+    const i = lastClosedIndex(d1, '1day');
+    const iPrev = i - 1;
+    const nowClose = d1[i].c;
+    const prevClose = d1[iPrev].c;
+    last.price = nowClose;
+    renderPrice(nowClose, prevClose);
+    renderDaily(perm);
+
+    // 2) 4H
+    const h4 = await fetchOHLC('4h', OUTPUT.h4);
+    last.h4 = h4;
+
+    setNextH4CloseFromData(h4);
+    updateTimer();
+
+    const h4State = calcH4State(h4, perm.mode);
+    renderH4(h4State, perm.mode);
+
+    $('apiBadge').className = 'badge ok';
+    $('apiBadge').textContent = 'OHLC取得OK';
+
+    setUpdateTime();
+    showMsg('✅ 更新完了');
+  }catch(e){
+    console.error(e);
+    $('apiBadge').className = 'badge ng';
+    $('apiBadge').textContent = '取得失敗';
+    showMsg(`⚠️ ${e.message}`, 'error');
+  }
+}
+
+function showHelp(){
+  alert(
+`🎯 FX Pro（USDJPY固定 / 超安全①）
+
+【思想】
+・ギャンブル化を避け、勝ちやすい局面だけ参加
+・日足で「許可ON/OFF」を自動判定
+・4Hで押し目（戻り）＋再開確認が取れた時だけ "ENTRY_OK"
+
+【許可ON（超安全①）日足】
+BUY:
+1) Close > EMA200
+2) EMA50 > EMA200
+3) EMA200の傾き上
+4) ADX(14) >= 30
+5) ADX上向き
+SELLは逆
+
+【4H（1Hなし）】
+・EMA20-50ゾーンに接触（押し/戻り）
+・4H確定で再開確認（高値更新/安値更新 + EMA20方向）
+
+【推奨チェック（JST）】
+09:05 / 17:05 / 01:05
+
+【注意】
+・HTTPS必須
+・月800リクエスト制限
+・タイムゾーン: Asia/Tokyo
+・確定足判定: 時刻ベース（90秒安全マージン）
+`
+  );
+}
+
+function init(){
+  setEnvUI();
+  setCredits();
+  updateTimer();
+  setInterval(updateTimer, 30*1000);
+}
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', init);
+}else{
+  init();
+}
+</script>
+
+</body>
+</html>
